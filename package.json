@@ -1,0 +1,30 @@
+{
+  "name": "cishu-data-format",
+  "version": "1.0.0",
+  "description": "辞书处理xml数据格式的工具库",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cishu",
+    "xml",
+    "data-format",
+    "dictionary",
+    "toolkit"
+  ],
+  "author": "Ginga",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bestPrunce/cishu-data-format.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bestPrunce/cishu-data-format/issues"
+  },
+  "homepage": "https://github.com/bestPrunce/cishu-data-format#readme",
+  "files": [
+    "src"
+  ]
+}
