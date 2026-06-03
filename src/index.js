@@ -1,4 +1,10 @@
 /**
+ * @author Ginga
+ * @updated 2026-06-03 14:09:10
+ * @version 1.0.2
+ */
+
+/**
  * XML 内容转义
  * @param {string} str - 待转义的 XML 文本内容
  * @returns {string} 转义后的文本
