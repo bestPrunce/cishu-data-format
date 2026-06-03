@@ -103,6 +103,28 @@ const text = XmlProcessor.extractText(xml);
 console.log(text); // "hello & world some cdata"
 ```
 
+### 4. XML 转 HTML (`xmlToHtml`)
+
+将 XML 字符串转换为 HTML 字符串。所有 XML 标签都转换为指定的 HTML 标签（仅限 `'span'`, `'div'`, `'p'`，默认是 `'span'`），保留所有属性并添加 `xml-name` 属性以保留原标签名。
+
+- **`XmlProcessor.xmlToHtml(xmlString, targetTag)`** 或 `new XmlProcessor().xmlToHtml(xmlString, targetTag)`
+
+```javascript
+import XmlProcessor from 'cishu-data-format';
+
+const xml = '<entry id="100" class="entry-class"><hw dialect="en">hello</hw></entry>';
+
+// 转换并生成 span（默认）
+const htmlSpan = XmlProcessor.xmlToHtml(xml);
+console.log(htmlSpan);
+// <span xml-name="entry" id="100" class="entry-class"><span xml-name="hw" dialect="en">hello</span></span>
+
+// 转换并生成 div
+const htmlDiv = XmlProcessor.xmlToHtml(xml, 'div');
+console.log(htmlDiv);
+// <div xml-name="entry" id="100" class="entry-class"><div xml-name="hw" dialect="en">hello</div></div>
+```
+
 ---
 
 ## 许可证
