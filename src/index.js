@@ -1,6 +1,6 @@
 /**
  * @author Ginga
- * @updated 2026-06-03 16:06:29
+ * @updated 2026-06-03 16:13:43
  * @version 1.0.2
  */
 
@@ -49,9 +49,7 @@ function parseAttributes(str) {
  * @returns {Object|Array} 解析后的 JSON 节点或节点数组
  */
 function parse(xml) {
-  if (typeof xml !== 'string') {
-    throw new TypeError('XML input must be a string');
-  }
+  xml = formatXmlString(xml)
 
   xml = xml.trim();
   const tagRegex = /<([^>]+)>/g;
@@ -174,6 +172,18 @@ function extractText(xmlStr) {
     // 去掉多余空白
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function formatXmlString(str) {
+  let xmlString = str
+  if (!xmlString || typeof xmlString !== 'string') {
+    console.error('XML string is invalid');
+    return '';
+  }
+  if (xmlString.includes('<?xml version="1.0" encoding="UTF-8"?>')) {
+    xmlString = xmlString.replaceAll('<?xml version="1.0" encoding="UTF-8"?>', '')
+  }
+  return xmlString
 }
 
 export class XmlProcessor {
