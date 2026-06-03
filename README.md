@@ -87,6 +87,22 @@ const xmlString = XmlProcessor.format(json);
 console.log(xmlString); // <entry id="100"><hw>hello</hw></entry>
 ```
 
+### 3. 提取纯文本 (`extractText`)
+
+提取 XML 字符串中的纯文本，去除所有标签和 CDATA 标记，并转换常见的 HTML/XML 实体。
+
+- **`XmlProcessor.extractText(xmlString)`** 或 `new XmlProcessor().extractText(xmlString)`
+
+```javascript
+import XmlProcessor from 'cishu-data-format';
+
+const xml = '<entry id="100"><hw>hello &amp; world</hw> <![CDATA[some cdata]]></entry>';
+
+// 提取纯文本
+const text = XmlProcessor.extractText(xml);
+console.log(text); // "hello & world some cdata"
+```
+
 ---
 
 ## 许可证

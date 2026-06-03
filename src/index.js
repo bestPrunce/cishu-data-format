@@ -1,6 +1,6 @@
 /**
  * @author Ginga
- * @updated 2026-06-03 14:09:10
+ * @updated 2026-06-03 16:06:29
  * @version 1.0.2
  */
 
@@ -151,6 +151,31 @@ function format(node) {
   return `${openTag}${children}</${node.name}>`;
 }
 
+/**
+ * 提取 XML 中的纯文本内容
+ * @param {string} xmlStr - XML 字符串
+ * @returns {string} 纯文本内容
+ */
+function extractText(xmlStr) {
+  if (!xmlStr) return '';
+
+  return xmlStr
+    // 去掉 CDATA
+    .replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1')
+    // 去掉所有标签
+    .replace(/<[^>]+>/g, '')
+    // 处理常见 HTML/XML 实体
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    // 去掉多余空白
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export class XmlProcessor {
   /**
    * 将 XML 字符串转换为 JSON 对象结构
@@ -169,6 +194,15 @@ export class XmlProcessor {
   format(node) {
     return format(node);
   }
+
+  /**
+   * 提取 XML 中的纯文本内容
+   * @param {string} xmlStr - XML 字符串
+   * @returns {string} 纯文本内容
+   */
+  extractText(xmlStr) {
+    return extractText(xmlStr);
+  }
 }
 
 // 创建默认共享实例，用于静态方法调用
@@ -177,5 +211,6 @@ const defaultInstance = new XmlProcessor();
 // 绑定静态方法
 XmlProcessor.parse = (xml) => parse(xml);
 XmlProcessor.format = (node) => format(node);
+XmlProcessor.extractText = (xmlStr) => extractText(xmlStr);
 
 export default XmlProcessor;
