@@ -125,6 +125,35 @@ console.log(htmlDiv);
 // <div xml-name="entry" id="100" class="entry-class"><div xml-name="hw" dialect="en">hello</div></div>
 ```
 
+### 5. 动态加载 base64 格式字体 (`injectBase64Font`)
+
+支持在**微信小程序环境**与**浏览器环境**中动态加载 base64 编码的字体，并返回 `Promise`。
+
+- **`XmlProcessor.injectBase64Font(fontData, fontFamily)`** 或 `new XmlProcessor().injectBase64Font(fontData, fontFamily)`
+- 也可以通过命名导入调用：`import { injectBase64Font } from 'cishu-data-format';`
+
+#### 参数
+- `fontData` (*string*): base64 编码的字体数据。
+- `fontFamily` (*string*, 可选): 字体家族名称，默认为 `'ztFont'`。
+
+#### 返回值
+- 返回一个 `Promise<void>`。
+
+```javascript
+import { injectBase64Font } from 'cishu-data-format';
+
+const fontBase64 = 'AAEAAAASAQA...'; // base64 字体内容
+
+// 动态注入字体
+injectBase64Font(fontBase64, 'customFont')
+  .then(() => {
+    console.log('字体加载并注入成功，现在可以在 CSS 中使用 fontFamily: "customFont" 了');
+  })
+  .catch(err => {
+    console.error('字体注入失败：', err);
+  });
+```
+
 ---
 
 ## 许可证

@@ -1,6 +1,6 @@
 /**
  * @author Ginga
- * @updated 2026-06-03 16:20:23
+ * @updated 2026-06-04 11:16:37
  * @version 1.0.2
  */
 
@@ -317,6 +317,56 @@ function xmlToHtml(xmlString, targetTag = 'span') {
   }
 }
 
+export function injectBase64Font(fontData, fontFamily = 'ztFont') {
+  return new Promise((resolve, reject) => {
+    // 微信小程序环境
+    if (typeof wx !== 'undefined' && typeof wx.loadFontFace === 'function') {
+      wx.loadFontFace({
+        global: true,
+        family: fontFamily,
+        source: `data:font/truetype;charset=utf-8;base64,${fontData}`,
+        success: () => resolve(),
+        fail: (res) => {
+          console.error('字体加载失败：', res);
+          reject(res);
+        },
+      });
+    }
+    // 浏览器环境
+    else if (typeof document !== 'undefined') {
+      try {
+        if (typeof FontFace !== 'undefined' && document.fonts) {
+          const fontFace = new FontFace(fontFamily, `url(data:font/truetype;charset=utf-8;base64,${fontData})`);
+          fontFace.load().then((loadedFace) => {
+            document.fonts.add(loadedFace);
+            resolve();
+          }).catch((err) => {
+            console.error('字体加载失败：', err);
+            reject(err);
+          });
+        } else {
+          const style = document.createElement('style');
+          style.textContent = `
+            @font-face {
+              font-family: '${fontFamily}';
+              src: url(data:font/truetype;charset=utf-8;base64,${fontData}) format('truetype');
+            }
+          `;
+          document.head.appendChild(style);
+          resolve();
+        }
+      } catch (err) {
+        console.error('字体加载失败：', err);
+        reject(err);
+      }
+    } else {
+      const err = new Error('当前环境不支持加载字体');
+      console.error(err.message);
+      reject(err);
+    }
+  });
+}
+
 export class XmlProcessor {
   /**
    * 将 XML 字符串转换为 JSON 对象结构
@@ -356,6 +406,16 @@ export class XmlProcessor {
   xmlToHtml(xmlString, targetTag = 'span') {
     return xmlToHtml(xmlString, targetTag);
   }
+
+  /**
+   * 加载 base64 格式的字体
+   * @param {string} fontData - base64 编码的字体数据
+   * @param {string} [fontFamily='ztFont'] - 字体家族名称
+   * @returns {Promise<void>}
+   */
+  injectBase64Font(fontData, fontFamily = 'ztFont') {
+    return injectBase64Font(fontData, fontFamily);
+  }
 }
 
 // 创建默认共享实例，用于静态方法调用
@@ -366,5 +426,6 @@ XmlProcessor.parse = (xml) => parse(xml);
 XmlProcessor.format = (node) => format(node);
 XmlProcessor.extractText = (xmlStr) => extractText(xmlStr);
 XmlProcessor.xmlToHtml = (xmlString, targetTag) => xmlToHtml(xmlString, targetTag);
+XmlProcessor.injectBase64Font = (fontData, fontFamily) => injectBase64Font(fontData, fontFamily);
 
 export default XmlProcessor;
