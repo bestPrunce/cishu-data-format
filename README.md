@@ -154,6 +154,53 @@ injectBase64Font(fontBase64, 'customFont')
   });
 ```
 
+### 6. 格式化词条 HTML (`chFormatXmlHtml`)
+
+将原始的词书 XML 格式数据进行深度清洗、排版和样式修饰，转换为适合前端直接渲染的 HTML 兼容字符串。
+
+- **`XmlProcessor.chFormatXmlHtml(xmlString)`** 或 `new XmlProcessor().chFormatXmlHtml(xmlString)`
+
+#### 转换逻辑说明
+此方法内部依次对 XML 数据节点执行以下处理：
+1. **义项与编号排版**：如果存在多个 `<sense>`（义项），会自动在其开头前置插入形如 `[1]`, `[2]` 的灰色框角标，并对 `<sensenum>` 进行识别替换为黑色圆圈字符（如 `❶`, `❷`）。
+2. **拼音/冗余标签清理**：自动移除 `<pinyin>`、`<pinyinlianxie>`、`<headword>` 等标签，以及没有内容的空标签（如空的 `<title>`）。
+3. **简繁与异体字描述**：合并相邻的繁体字（`<tradition>`）或异体字（`<variantion>`）标签，并前置描述前缀（如 `"繁体："` 或 `"异体："`）。
+4. **超链接化与样式修饰**：将 `<consultword>` 转换为带蓝色和手型光标的跳转样式；微调 `<sup>` 标签的行高；处理前置角标 `<supfront>` 与后置角标 `<supback>`。
+5. **通用标签映射**：将 `<underline>` 映射为 `<u>`，`<sub>` 映射为 `<sub>`，`<italic>` 映射为 `<i>`，`<citation>` 和 `<example>` 映射为 `<div>`。
+6. **生僻字加粗模拟**：为 `<b>` 标签添加 `text-shadow` 阴影，以解决部分自定义字体没有粗体字重的问题。
+7. **图片渲染转换**：将 `<image>` 转换为 `<img>` 标签，并自动根据属性（如 `gswImage` 或 `scale`）自适应宽度或高度。
+
+```javascript
+import XmlProcessor from 'cishu-data-format';
+
+const xml = '<entry><tradition>張</tradition><sense id="1"><sensenum>1</sensenum><consultword>张开</consultword></sense></entry>';
+
+const formattedHtml = XmlProcessor.chFormatXmlHtml(xml);
+console.log(formattedHtml);
+// 输出包含繁体字前缀描述、义项序号、跳转链接样式及排版样式的 HTML 字符串
+```
+
+### 7. 从 XML 提取拼音数组 (`execPyArrFromXml`)
+
+从 XML 字符串中递归解析并提取出所有的拼音（`pinyin`）及拼音连写（`pinyinlianxie`）字段，并以对象数组的形式返回。
+
+- **`XmlProcessor.execPyArrFromXml(xmlString)`** 或 `new XmlProcessor().execPyArrFromXml(xmlString)`
+
+```javascript
+import XmlProcessor from 'cishu-data-format';
+
+const xml = '<entry><pinyin>zhāng</pinyin><pinyinlianxie>zhāngkāi</pinyinlianxie></entry>';
+
+const pyList = XmlProcessor.execPyArrFromXml(xml);
+console.log(pyList);
+/* 输出:
+[
+  { tag: "pinyin", value: "zhāng" },
+  { tag: "pinyinlianxie", value: "zhāngkāi" }
+]
+*/
+```
+
 ---
 
 ## 许可证
