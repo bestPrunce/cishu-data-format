@@ -386,6 +386,147 @@ async function loadFont() {
 - 字体文件会通过网络请求获取，首次加载可能需要一定时间，建议在应用启动时预加载。
 - 加载失败时会抛出错误，建议使用 `try-catch` 或 `.catch()` 进行错误处理。
 
+### 11. XML 词条结构转换 (`transformEntryXML`)
+
+将词书 XML 数据从三层结构转换为四层结构，自动处理拼音归并、义项分组、内容流重建等复杂转换逻辑。该方法专为词书数据结构优化设计。
+
+- **`XmlProcessor.transformEntryXML(xmlStr)`** 或 `new XmlProcessor().transformEntryXML(xmlStr)`
+- 也可以通过命名导入调用：`import { transformEntryXML } from 'cishu-data-format';`
+
+#### 参数
+- `xmlStr` (*string*): 原始的词书 XML 字符串（三层结构）。
+
+#### 返回值
+- 返回转换后的 XML 字符串（四层结构）。
+
+#### 转换逻辑说明
+1. **结构层级转换**：将原始的三层词条结构（entry > definition > content）转换为四层结构（entry > definition > section > content），便于更细粒度的内容管理。
+
+2. **单字词条特殊处理**：
+   - 自动识别单字词条（`headword` 长度为 1）。
+   - 按拼音对 `definition` 节点进行分组归并。
+   - 相同拼音的 `definition` 合并为一个 `definition` 节点，内部创建多个 `section` 节点。
+
+3. **多字词条常规处理**：
+   - 每个原始 `definition` 节点转换为一个新的 `definition` 节点。
+   - 每个新 `definition` 节点内包含一个 `section` 节点。
+
+4. **拼音处理**：
+   - 提取第一个拼音作为分组依据。
+   - 对于单字词条，删除原 `definition` 内的首个拼音（避免重复）。
+   - 第二个及之后的拼音标签自动转换为 `<duyin>`（多音）标签。
+
+5. **序号与顺序标记**：
+   - 为 `definition` 节点添加数字序号 `id` 属性。
+   - 为 `section` 节点添加数字序号 `id` 属性和圆圈序号 `order` 属性（如 `①②③④...`）。
+
+6. **内容流重建**：
+   - 智能处理文本节点和元素节点的混合内容。
+   - 保留原始节点的所有属性和子节点结构。
+   - 自动处理括号、空白等格式细节。
+
+#### 使用示例
+
+```javascript
+import XmlProcessor from 'cishu-data-format';
+
+// 示例1：单字词条转换（会按拼音分组）
+const singleCharXml = `
+<entry id="100">
+  <headword>干</headword>
+  <definition>
+    <pinyin>gān</pinyin>
+    <content>触犯，冒犯</content>
+  </definition>
+  <definition>
+    <pinyin>gān</pinyin>
+    <content>追求，求取</content>
+  </definition>
+  <definition>
+    <pinyin>gàn</pinyin>
+    <content>做，办，搞</content>
+  </definition>
+</entry>
+`.trim();
+
+const result1 = XmlProcessor.transformEntryXML(singleCharXml);
+console.log(result1);
+/* 输出结构：
+<entry id="100">
+  <headword>干</headword>
+  <definition id="1">
+    <pinyin>gān</pinyin>
+    <pinyinlianxie/>
+    <section id="1" order="①">
+      <content>触犯，冒犯</content>
+    </section>
+    <section id="2" order="②">
+      <content>追求，求取</content>
+    </section>
+  </definition>
+  <definition id="2">
+    <pinyin>gàn</pinyin>
+    <pinyinlianxie/>
+    <section id="1" order="①">
+      <content>做，办，搞</content>
+    </section>
+  </definition>
+</entry>
+*/
+
+// 示例2：多字词条转换（不会合并）
+const multiCharXml = `
+<entry id="200">
+  <headword>干部</headword>
+  <definition>
+    <pinyin>gànbù</pinyin>
+    <content>担任一定领导工作的人员</content>
+  </definition>
+  <definition>
+    <content>树木的主干</content>
+  </definition>
+</entry>
+`.trim();
+
+const result2 = XmlProcessor.transformEntryXML(multiCharXml);
+console.log(result2);
+/* 输出结构：
+<entry id="200">
+  <headword>干部</headword>
+  <definition id="1">
+    <section id="1" order="①">
+      <pinyin>gànbù</pinyin>
+      <content>担任一定领导工作的人员</content>
+    </section>
+  </definition>
+  <definition id="2">
+    <section id="1" order="①">
+      <content>树木的主干</content>
+    </section>
+  </definition>
+</entry>
+*/
+
+// 示例3：使用命名导入
+import { transformEntryXML } from 'cishu-data-format';
+
+const xml = '<entry id="300"><headword>好</headword><definition><pinyin>hǎo</pinyin><content>优点多</content></definition></entry>';
+const converted = transformEntryXML(xml);
+console.log(converted);
+```
+
+#### 使用场景
+- **词条数据结构升级**：将旧版三层结构词条数据批量转换为新版四层结构。
+- **拼音归并与分组**：自动处理多音字词条，按拼音智能分组。
+- **数据标准化处理**：统一词条数据格式，便于后续的数据处理和展示。
+- **批量数据转换**：适用于大规模词典数据的结构化转换工作。
+
+#### 注意事项
+- 该方法依赖浏览器环境的 `DOMParser` 和 `XMLSerializer` API，不支持 Node.js 环境（除非使用 jsdom 等库）。
+- 输入的 XML 必须是格式良好的 XML 文档，否则解析会失败。
+- 转换过程中会自动清理多余的空白和换行，确保输出 XML 的整洁性。
+- 单字词条的识别依据是 `<headword>` 标签的文本内容长度，确保该标签正确且唯一。
+
 ---
 
 ## 许可证

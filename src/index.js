@@ -1,6 +1,6 @@
 /**
  * @author Ginga
- * @updated 2026-06-05 13:15:50
+ * @updated 2026-06-05 15:32:17
  * @version 1.0.4
  */
 
@@ -1327,6 +1327,200 @@ export async function jdLoadRemoteFont(fontId, token, fontFamily = 'ztFont') {
   await injectBase64Font(base64, fontFamily);
 }
 
+// ════════════════════════════════════════════════════════════════
+//  常量配置
+// ════════════════════════════════════════════════════════════════
+const CIRCLED = ["㊀", "㊁", "㊂", "㊃", "㊄", "㊅", "㊆", "㊇", "㊈", "㊉"];
+
+// ════════════════════════════════════════════════════════════════
+//  辅助工具函数 (模块内部私有)
+// ════════════════════════════════════════════════════════════════
+
+function cleanOrdinalText(text) {
+    if (!text) return text;
+    return text.replace(/\(\s*[一二三四五六七八九十]+\s*\)/g, '');
+}
+
+function getFirstPinyin(defEl) {
+    const p = defEl.querySelector("pinyin");
+    return p && p.textContent ? p.textContent.trim() : "";
+}
+
+function cleanXmlText(xmlStr) {
+    let s = xmlStr.replace(/\(\)/g, "");
+    s = s.replace(/\(〕/g, "");
+    s = s.replace(/<pinyinlianxie\s*\/?>(<\/pinyinlianxie>)?/g, "");
+    s = s.replace(/〔\s*(<tradition>[\s\S]*?<\/tradition>)\s*〕/g, "$1");
+    s = s.replace(/\)\s*\)/g, ')');
+    return s;
+}
+
+function copyHeadwordElement(srcRoot, newRoot, doc) {
+    const srcHw = srcRoot.querySelector("headword");
+    if (!srcHw) {
+        newRoot.appendChild(doc.createElement("headword"));
+        return;
+    }
+    newRoot.appendChild(srcHw.cloneNode(true));
+}
+
+function isSingleCharacterEntry(root) {
+    const hw = root.querySelector("headword");
+    if (hw) {
+        const textContent = hw.textContent.trim();
+        const imageCount = hw.querySelectorAll("image").length;
+        if ((textContent.length + imageCount) === 1) {
+            return true;
+        }
+    }
+
+    const defs = root.querySelectorAll("definition");
+    const pinyinSet = new Set();
+    defs.forEach(d => {
+        const py = getFirstPinyin(d).trim();
+        if (py) pinyinSet.add(py);
+    });
+
+    return pinyinSet.size >= 2;
+}
+
+function rebuildContentStream(srcDef, section, dropFirstPinyin, doc) {
+    let pinyinCount = 0;
+    let bufferText = "";
+    let expectClosingParen = false;
+
+    function appendText(text) {
+        if (text) bufferText += cleanOrdinalText(text);
+    }
+
+    function flushText() {
+        const stripped = bufferText.trim();
+        if (stripped) {
+            section.appendChild(doc.createTextNode(stripped));
+        }
+        bufferText = "";
+    }
+
+    Array.from(srcDef.childNodes).forEach(node => {
+        if (node.nodeType === 3) {
+            let textContent = node.nodeValue || "";
+            if (expectClosingParen) {
+                textContent = textContent.replace(/^\s*[)）]/, "");
+                expectClosingParen = false;
+            }
+            appendText(textContent);
+        }
+        else if (node.nodeType === 1) {
+            if (node.tagName.toLowerCase() === "pinyin") {
+                pinyinCount++;
+                if (dropFirstPinyin && pinyinCount === 1) {
+                    bufferText = bufferText.replace(/[(（]\s*[\u4e00-\u9fa5]*\s*$/, "");
+                    expectClosingParen = true;
+                    return;
+                }
+                flushText();
+
+                let newNode;
+                if (pinyinCount >= 2) {
+                    newNode = doc.createElement("duyin");
+                    Array.from(node.childNodes).forEach(c => newNode.appendChild(c.cloneNode(true)));
+                } else {
+                    newNode = node.cloneNode(true);
+                }
+                section.appendChild(newNode);
+            } else {
+                flushText();
+                section.appendChild(node.cloneNode(true));
+            }
+        }
+    });
+
+    flushText();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  核心转换函数 (使用 export 导出，供外部调用)
+// ════════════════════════════════════════════════════════════════
+
+/**
+ * XML 转换核心函数 三层转四层结构
+ * @param {string} xmlStr 原始 XML 字符串
+ * @returns {string} 转换处理后的 XML 字符串
+ */
+export function transformEntryXML(xmlStr) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlStr, "text/xml");
+    const root = doc.documentElement;
+
+    // 浏览器环境下，直接使用 document.implementation 创建纯净的 XML 文档
+    const newDoc = document.implementation.createDocument(null, "entry", null);
+    const newRoot = newDoc.documentElement;
+
+    Array.from(root.attributes).forEach(attr => {
+        newRoot.setAttribute(attr.name, attr.value);
+    });
+
+    copyHeadwordElement(root, newRoot, newDoc);
+
+    const isSingle = isSingleCharacterEntry(root);
+    const defs = Array.from(root.querySelectorAll("definition"));
+
+    if (isSingle) {
+        const groups = {};
+        defs.forEach(d => {
+            const py = getFirstPinyin(d);
+            if (!groups[py]) groups[py] = [];
+            groups[py].push(d);
+        });
+
+        let i = 1;
+        for (const [py, defList] of Object.entries(groups)) {
+            const newDef = newDoc.createElement("definition");
+            newDef.setAttribute("id", String(i));
+            newRoot.appendChild(newDef);
+
+            if (py) {
+                const pinyinEl = newDoc.createElement("pinyin");
+                pinyinEl.textContent = py;
+                newDef.appendChild(pinyinEl);
+                newDef.appendChild(newDoc.createElement("pinyinlianxie"));
+            }
+
+            let j = 1;
+            for (const d of defList) {
+                const sec = newDoc.createElement("section");
+                sec.setAttribute("id", String(j));
+                sec.setAttribute("order", j <= CIRCLED.length ? CIRCLED[j - 1] : String(j));
+                newDef.appendChild(sec);
+
+                rebuildContentStream(d, sec, true, newDoc);
+                j++;
+            }
+            i++;
+        }
+    }
+    else {
+        let i = 1;
+        for (const d of defs) {
+            const newDef = newDoc.createElement("definition");
+            newDef.setAttribute("id", String(i));
+            newRoot.appendChild(newDef);
+
+            const sec = newDoc.createElement("section");
+            sec.setAttribute("id", "1");
+            sec.setAttribute("order", CIRCLED[0]);
+            newDef.appendChild(sec);
+
+            rebuildContentStream(d, sec, false, newDoc);
+            i++;
+        }
+    }
+
+    const serializer = new XMLSerializer();
+    const rawXml = serializer.serializeToString(newDoc);
+    return cleanXmlText(rawXml);
+}
+
 export class XmlProcessor {
   /**
    * 将 XML 字符串转换为 JSON 对象结构
@@ -1424,6 +1618,15 @@ export class XmlProcessor {
   jdLoadRemoteFont(fontId, token, fontFamily = 'ztFont') {
     return jdLoadRemoteFont(fontId, token, fontFamily);
   }
+
+  /**
+   * XML 转换核心函数 三层转四层结构
+   * @param {string} xmlStr - 原始 XML 字符串
+   * @returns {string} 转换处理后的 XML 字符串
+   */
+  transformEntryXML(xmlStr) {
+    return transformEntryXML(xmlStr);
+  }
 }
 
 // 创建默认共享实例，用于静态方法调用
@@ -1440,5 +1643,6 @@ XmlProcessor.chFormatXmlPreview = (xml) => chFormatXmlPreview(xml);
 XmlProcessor.jdFormatXmlHtml = (xml) => jdFormatXmlHtml(xml);
 XmlProcessor.jdFormatScDetailXml = (xml, delTag) => jdFormatScDetailXml(xml, delTag);
 XmlProcessor.jdLoadRemoteFont = (fontId, token, fontFamily) => jdLoadRemoteFont(fontId, token, fontFamily);
+XmlProcessor.transformEntryXML = (xmlStr) => transformEntryXML(xmlStr);
 
 export default XmlProcessor;
