@@ -154,31 +154,38 @@ injectBase64Font(fontBase64, 'customFont')
   });
 ```
 
-### 6. 格式化词条 HTML (`chFormatXmlHtml`)
+### 6. XML 快速预览格式化 (`chFormatXmlPreview`)
 
-将原始的词书 XML 格式数据进行深度清洗、排版和样式修饰，转换为适合前端直接渲染的 HTML 兼容字符串。
+将原始的词书 XML 格式数据一步转换为适合前端直接渲染的预览 HTML 字符串。这是一个便捷方法，内部会先将 XML 标签统一转换为 HTML span 标签（保留 `xml-name` 属性），然后进行深度清洗、排版和样式修饰。
 
-- **`XmlProcessor.chFormatXmlHtml(xmlString)`** 或 `new XmlProcessor().chFormatXmlHtml(xmlString)`
+- **`XmlProcessor.chFormatXmlPreview(xmlString)`** 或 `new XmlProcessor().chFormatXmlPreview(xmlString)`
 
 #### 转换逻辑说明
-此方法内部依次对 XML 数据节点执行以下处理：
-1. **义项与编号排版**：如果存在多个 `<sense>`（义项），会自动在其开头前置插入形如 `[1]`, `[2]` 的灰色框角标，并对 `<sensenum>` 进行识别替换为黑色圆圈字符（如 `❶`, `❷`）。
-2. **拼音/冗余标签清理**：自动移除 `<pinyin>`、`<pinyinlianxie>`、`<headword>` 等标签，以及没有内容的空标签（如空的 `<title>`）。
-3. **简繁与异体字描述**：合并相邻的繁体字（`<tradition>`）或异体字（`<variantion>`）标签，并前置描述前缀（如 `"繁体："` 或 `"异体："`）。
-4. **超链接化与样式修饰**：将 `<consultword>` 转换为带蓝色和手型光标的跳转样式；微调 `<sup>` 标签的行高；处理前置角标 `<supfront>` 与后置角标 `<supback>`。
-5. **通用标签映射**：将 `<underline>` 映射为 `<u>`，`<sub>` 映射为 `<sub>`，`<italic>` 映射为 `<i>`，`<citation>` 和 `<example>` 映射为 `<div>`。
-6. **生僻字加粗模拟**：为 `<b>` 标签添加 `text-shadow` 阴影，以解决部分自定义字体没有粗体字重的问题。
-7. **图片渲染转换**：将 `<image>` 转换为 `<img>` 标签，并自动根据属性（如 `gswImage` 或 `scale`）自适应宽度或高度。
+此方法相当于先执行 `xmlToHtml(xml)`，再执行格式化处理，包含以下特性：
+1. **标签统一化**：所有 XML 标签转换为 HTML `<span>` 标签，并通过 `xml-name` 属性保留原始标签名。
+2. **义项与编号排版**：如果存在多个 `<sense>`（义项），会自动在其开头前置插入形如 `[1]`, `[2]` 的灰色框角标，并对 `<sensenum>` 进行识别替换为黑色圆圈数字。
+3. **拼音/冗余标签清理**：自动移除 `<pinyin>`、`<pinyinlianxie>`、`<headword>` 等标签，以及没有内容的空标签（如空的 `<title>`）。
+4. **简繁与异体字描述**：合并相邻的繁体字（`<tradition>`）或异体字（`<variantion>`）标签，并前置描述前缀（如 `"繁体："` 或 `"异体："`）。
+5. **超链接化与样式修饰**：将 `<consultword>` 转换为带蓝色和手型光标的跳转样式；微调 `<sup>` 标签的行高；处理前置角标 `<supfront>` 与后置角标 `<supback>`。
+6. **通用标签映射**：将 `<underline>` 映射为 `<u>`，`<sub>` 映射为 `<sub>`，`<italic>` 映射为 `<i>`，`<citation>` 和 `<example>` 映射为 `<div>`。
+7. **生僻字加粗模拟**：为 `<b>` 标签添加 `text-shadow` 阴影，以解决部分自定义字体没有粗体字重的问题。
+8. **图片渲染转换**：将 `<image>` 转换为 `<img>` 标签，并自动根据属性（如 `gswImage` 或 `scale`）自适应宽度或高度。
 
 ```javascript
 import XmlProcessor from 'cishu-data-format';
 
-const xml = '<entry><tradition>張</tradition><sense id="1"><sensenum>1</sensenum><consultword>张开</consultword></sense></entry>';
+const xml = '<entry id="100"><tradition>張</tradition><sense id="1"><sensenum>1</sensenum><consultword>张开</consultword></sense></entry>';
 
-const formattedHtml = XmlProcessor.chFormatXmlHtml(xml);
-console.log(formattedHtml);
-// 输出包含繁体字前缀描述、义项序号、跳转链接样式及排版样式的 HTML 字符串
+// 一步转换为预览格式的 HTML
+const previewHtml = XmlProcessor.chFormatXmlPreview(xml);
+console.log(previewHtml);
+// 输出统一标签化并包含繁体字前缀描述、义项序号、跳转链接样式及排版样式的 HTML 字符串
 ```
+
+#### 使用场景
+- **快速预览**：当你需要快速将 XML 词条渲染到前端页面进行预览时。
+- **一致性渲染**：确保所有标签都被转换为标准 HTML 标签，便于统一样式控制。
+- **原始标签追溯**：通过 `xml-name` 属性可以追溯原始的 XML 标签名，方便调试和样式定制。
 
 ### 7. 从 XML 提取拼音数组 (`execPyArrFromXml`)
 
