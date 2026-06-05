@@ -1,6 +1,6 @@
 /**
  * @author Ginga
- * @updated 2026-06-04 15:58:11
+ * @updated 2026-06-05 09:09:01
  * @version 1.0.3
  */
 
@@ -846,7 +846,9 @@ function execPY(node, res) {
   return null;
 }
 
-
+export function chFormatXmlPreview(xml) {
+  return chFormatXmlHtml(xmlToHtml(xml))
+}
 
 /**
  * Format XML 字符串转换成的 HTML 字符串
@@ -956,12 +958,12 @@ export class XmlProcessor {
   }
 
   /**
-   * Format XML 字符串转换成的 HTML 字符串
+   * 将 XML 字符串快速转换为预览格式的 HTML
    * @param {string} xml - XML 字符串
-   * @returns {string} 格式化后的 XML/HTML 字符串
+   * @returns {string} 格式化后的 HTML 字符串
    */
-  chFormatXmlHtml(xml) {
-    return chFormatXmlHtml(xml);
+  chFormatXmlPreview(xml) {
+    return chFormatXmlPreview(xml);
   }
 
   /**
@@ -983,7 +985,7 @@ XmlProcessor.format = (node) => format(node);
 XmlProcessor.extractText = (xmlStr) => extractText(xmlStr);
 XmlProcessor.xmlToHtml = (xmlString, targetTag) => xmlToHtml(xmlString, targetTag);
 XmlProcessor.injectBase64Font = (fontData, fontFamily) => injectBase64Font(fontData, fontFamily);
-XmlProcessor.chFormatXmlHtml = (xml) => chFormatXmlHtml(xml);
 XmlProcessor.execPyArrFromXml = (xml) => execPyArrFromXml(xml);
+XmlProcessor.chFormatXmlPreview = (xml) => chFormatXmlPreview(xml);
 
 export default XmlProcessor;
