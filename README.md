@@ -315,6 +315,77 @@ console.log(result2);
 - **图片自适应**：自动处理不同尺寸的图片，确保在不同设备上的最佳显示效果。
 - **内容筛选**：通过 `delTag` 参数可以过滤特定类型的扩展内容，实现灵活的内容展示控制。
 
+### 10. 远程字体加载与注入 (`jdLoadRemoteFont`)
+
+从远程服务器请求指定的字体文件（.woff 格式），并自动注入到当前运行环境中（支持微信小程序与浏览器环境）。此方法会自动处理网络请求、数据转换和字体注入的全过程。
+
+- **`XmlProcessor.jdLoadRemoteFont(fontId, token, fontFamily)`** 或 `new XmlProcessor().jdLoadRemoteFont(fontId, token, fontFamily)`
+- 也可以通过命名导入调用：`import { jdLoadRemoteFont } from 'cishu-data-format';`
+
+#### 参数
+- `fontId` (*string*): 字体 ID，例如 `'cZmnsAjAPolJVuYq'`。
+- `token` (*string*): 有效的 Bearer token，用于 API 认证。
+- `fontFamily` (*string*, 可选): 注册后使用的 CSS 字体名，默认为 `'ztFont'`。
+
+#### 返回值
+- 返回一个 `Promise<void>`。
+
+#### 工作原理
+1. **构建请求 URL**：根据 `fontId` 拼接完整的字体文件下载地址（`https://api.jdapi.com/font/{fontId}.woff?v=2`）。
+2. **环境适配请求**：
+   - **微信小程序**：使用 `wx.request` 并设置 `responseType: 'arraybuffer'` 获取字体二进制数据。
+   - **浏览器环境**：使用 `fetch` API 获取字体数据并转换为 `ArrayBuffer`。
+3. **数据转换**：将 `ArrayBuffer` 转换为 base64 编码字符串。
+4. **字体注入**：调用 `injectBase64Font` 方法将 base64 字体注入到当前环境中，使其可在 CSS 中使用。
+
+#### 使用示例
+
+```javascript
+import { jdLoadRemoteFont } from 'cishu-data-format';
+
+// 获取用户 token（需要根据实际业务逻辑实现）
+const token = 'your-bearer-token-here';
+
+// 加载远程字体
+jdLoadRemoteFont('cZmnsAjAPolJVuYq', token)
+  .then(() => {
+    console.log('字体加载成功，现在可以使用 fontFamily: "ztFont" 了');
+  })
+  .catch(err => {
+    console.error('字体加载失败：', err);
+  });
+
+// 或者使用自定义字体名称
+jdLoadRemoteFont('cZmnsAjAPolJVuYq', token, 'JDShuFa')
+  .then(() => {
+    console.log('字体加载成功，现在可以使用 fontFamily: "JDShuFa" 了');
+  })
+  .catch(err => {
+    console.error('字体加载失败：', err);
+  });
+
+// 使用 async/await 语法
+async function loadFont() {
+  try {
+    await jdLoadRemoteFont('cZmnsAjAPolJVuYq', getToken(), 'customFont');
+    console.log('字体加载完成');
+  } catch (error) {
+    console.error('字体加载错误：', error);
+  }
+}
+```
+
+#### 使用场景
+- **动态字体加载**：在应用运行时根据需要动态加载特殊字体（如生僻字字体、书法字体等）。
+- **跨环境兼容**：一套代码同时支持微信小程序和浏览器环境，自动适配不同的网络请求方式。
+- **认证访问**：支持带 token 的字体资源访问，适用于需要权限控制的字体资源。
+- **辞书渲染**：配合辞书内容渲染，确保生僻字和特殊字符正确显示。
+
+#### 注意事项
+- 请确保提供的 `token` 有效且具有访问字体资源的权限。
+- 字体文件会通过网络请求获取，首次加载可能需要一定时间，建议在应用启动时预加载。
+- 加载失败时会抛出错误，建议使用 `try-catch` 或 `.catch()` 进行错误处理。
+
 ---
 
 ## 许可证

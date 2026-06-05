@@ -1,6 +1,6 @@
 /**
  * @author Ginga
- * @updated 2026-06-05 10:49:11
+ * @updated 2026-06-05 11:20:06
  * @version 1.0.3
  */
 
@@ -1252,6 +1252,81 @@ function replaceAnnotationText(node) {
   return null;
 }
 
+/**
+ * 将 ArrayBuffer 转为 base64 字符串
+ * @param {ArrayBuffer} buffer
+ * @returns {string}
+ */
+function arrayBufferToBase64(buffer) {
+  if (typeof wx !== 'undefined' && typeof wx.arrayBufferToBase64 === 'function') {
+    return wx.arrayBufferToBase64(buffer);
+  }
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
+/**
+ * 请求远程字体并注入当前环境（小程序 + 网页通用）
+ *
+ * @param {string} fontId           - 字体 ID，如 'cZmnsAjAPolJVuYq'
+ * @param {string} token            - 有效的 Bearer token
+ * @param {string} [fontFamily='ztFont'] - 注册后使用的 CSS 字体名
+ * @returns {Promise<void>}
+ *
+ * @example
+ *   await jdLoadRemoteFont('cZmnsAjAPolJVuYq', getToken());
+ *   await jdLoadRemoteFont('cZmnsAjAPolJVuYq', getToken(), 'JDShuFa');
+ */
+export async function jdLoadRemoteFont(fontId, token, fontFamily = 'ztFont') {
+  const FONT_BASE_URL = 'https://api.jdapi.com/font';
+  const url = `${FONT_BASE_URL}/${fontId}.woff?v=2`;
+  const headers = {
+    'Accept': '*/*',
+    'Authorization': `Bearer ${token}`,
+    'X-request-client': 'web',
+    'content-type': 'application/json',
+  };
+
+  let buffer;
+
+  // 微信小程序：wx.request
+  if (typeof wx !== 'undefined' && typeof wx.request === 'function') {
+    buffer = await new Promise((resolve, reject) => {
+      wx.request({
+        url,
+        method: 'GET',
+        header: headers,
+        responseType: 'arraybuffer',
+        success(res) {
+          if (res.statusCode === 200) {
+            resolve(res.data);
+          } else {
+            reject(new Error(`字体请求失败，状态码: ${res.statusCode}`));
+          }
+        },
+        fail(err) {
+          reject(new Error(`wx.request 失败: ${JSON.stringify(err)}`));
+        },
+      });
+    });
+  }
+  // 网页：fetch
+  else {
+    const res = await fetch(url, { method: 'GET', headers });
+    if (!res.ok) {
+      throw new Error(`字体请求失败，状态码: ${res.status}`);
+    }
+    buffer = await res.arrayBuffer();
+  }
+
+  const base64 = arrayBufferToBase64(buffer);
+  await injectBase64Font(base64, fontFamily);
+}
+
 export class XmlProcessor {
   /**
    * 将 XML 字符串转换为 JSON 对象结构
@@ -1338,6 +1413,17 @@ export class XmlProcessor {
   jdFormatScDetailXml(xml, delTag = '') {
     return jdFormatScDetailXml(xml, delTag);
   }
+
+  /**
+   * 请求远程字体并注入当前环境（小程序 + 网页通用）
+   * @param {string} fontId - 字体 ID，如 'cZmnsAjAPolJVuYq'
+   * @param {string} token - 有效的 Bearer token
+   * @param {string} [fontFamily='ztFont'] - 注册后使用的 CSS 字体名
+   * @returns {Promise<void>}
+   */
+  jdLoadRemoteFont(fontId, token, fontFamily = 'ztFont') {
+    return jdLoadRemoteFont(fontId, token, fontFamily);
+  }
 }
 
 // 创建默认共享实例，用于静态方法调用
@@ -1353,5 +1439,6 @@ XmlProcessor.execPyArrFromXml = (xml) => execPyArrFromXml(xml);
 XmlProcessor.chFormatXmlPreview = (xml) => chFormatXmlPreview(xml);
 XmlProcessor.jdFormatXmlHtml = (xml) => jdFormatXmlHtml(xml);
 XmlProcessor.jdFormatScDetailXml = (xml, delTag) => jdFormatScDetailXml(xml, delTag);
+XmlProcessor.jdLoadRemoteFont = (fontId, token, fontFamily) => jdLoadRemoteFont(fontId, token, fontFamily);
 
 export default XmlProcessor;
