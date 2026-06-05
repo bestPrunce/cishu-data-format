@@ -245,6 +245,76 @@ console.log(result);
 // 输出：<span xml-name="entry"><u xml-name="u">underlined text</u><div xml-name="citation" style="color: gray">citation content</div></span>
 ```
 
+### 9. 聚典古诗文 XML 格式化为 HTML (`jdFormatScDetailXml`)
+
+对聚典古诗文 XML 数据进行专门的格式化处理，将其转换为适合前端直接渲染的 HTML 字符串。此方法会自动将标签转换为 HTML，处理注释、图片、换行等特殊元素，并提供可选的内容过滤功能。
+
+- **`XmlProcessor.jdFormatScDetailXml(xmlString, delTag)`** 或 `new XmlProcessor().jdFormatScDetailXml(xmlString, delTag)`
+
+#### 参数
+- `xmlString` (*string*): 聚典古诗文 XML 字符串。
+- `delTag` (*string*, 可选): 删除标签选项，传入 `'del5'` 将删除 `type` 不为 `5` 的 `extracontent` 节点，默认为空字符串。
+
+#### 返回值
+- 返回格式化后的 HTML 字符串，可直接用于前端展示。
+
+#### 转换逻辑说明
+1. **标签转换与映射**：
+   - 自动为整个内容包裹 `<entry class="entry">` 标签。
+   - 将 `xml-name="annotation"` 的标签转换为 `<span>`。
+   - 将 `xml-name="extracontent"` 的标签转换为 `<div>`。
+
+2. **注释处理**：
+   - 将 `annotation` 标签内的文本全部替换为空字符串（暂时隐藏注释内容）。
+   - 后续可解开代码注释将其显示为蓝色边框的 "注" 字标记。
+
+3. **图片处理**：
+   - 识别 `xml-name="image"` 且 `scale > 1` 的图片节点，自动添加 `gswImage` 标记。
+   - 带有 `gswImage` 标记的图片将设置 `width: 100%` 样式，使其自适应容器宽度。
+   - 其他图片根据 `scale` 属性设置高度 `height: ${scale}em`。
+
+4. **换行转换**：
+   - 将所有 `\n` 换行符转换为 HTML `<br>` 标签，保持原文本的换行格式。
+
+5. **可选内容过滤**：
+   - 当 `delTag` 参数传入 `'del5'` 时，将删除所有 `type` 不为 `5` 的 `extracontent` 节点。
+
+6. **样式美化**：
+   - 最终调用 `chFormatXmlHtml` 方法进行统一的样式美化处理（包括义项序号、繁体字描述、链接样式等）。
+
+```javascript
+import XmlProcessor from 'cishu-data-format';
+
+// 示例1：基本格式化
+const xml1 = `
+<annotation>这是一条注释</annotation>
+<content>春眠不觉晓，\n处处闻啼鸟。</content>
+<image scale="2" src="example.jpg" />
+`.trim();
+
+const result1 = XmlProcessor.jdFormatScDetailXml(xml1);
+console.log(result1);
+// 输出包含注释（已隐藏文本）、换行符转为 <br>、图片自动处理的 HTML 字符串
+
+// 示例2：使用 delTag 参数过滤内容
+const xml2 = `
+<annotation>注释内容</annotation>
+<extracontent type="3">普通扩展内容</extracontent>
+<extracontent type="5">重要扩展内容</extracontent>
+<content>孤帆远影碧空尽，\n唯见长江天际流。</content>
+`.trim();
+
+const result2 = XmlProcessor.jdFormatScDetailXml(xml2, 'del5');
+console.log(result2);
+// 输出将删除 type 不为 5 的 extracontent 节点（即只保留 type="5" 的重要扩展内容）
+```
+
+#### 使用场景
+- **古诗文渲染**：专门用于聚典古诗文数据的前端展示。
+- **注释管理**：可灵活控制注释的显示/隐藏。
+- **图片自适应**：自动处理不同尺寸的图片，确保在不同设备上的最佳显示效果。
+- **内容筛选**：通过 `delTag` 参数可以过滤特定类型的扩展内容，实现灵活的内容展示控制。
+
 ---
 
 ## 许可证

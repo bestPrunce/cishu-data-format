@@ -1,6 +1,6 @@
 /**
  * @author Ginga
- * @updated 2026-06-05 10:19:10
+ * @updated 2026-06-05 10:49:11
  * @version 1.0.3
  */
 
@@ -322,6 +322,12 @@ function xmlToHtml(xmlString, targetTag = 'span') {
   }
 }
 
+/**
+ * 加载 base64 格式的字体
+ * @param {string} fontData - base64 编码的字体数据
+ * @param {string} [fontFamily='ztFont'] - 字体家族名称
+ * @returns {Promise<void>}
+ */
 export function injectBase64Font(fontData, fontFamily = 'ztFont') {
   return new Promise((resolve, reject) => {
     // 微信小程序环境
@@ -386,6 +392,11 @@ function getPrimaryColor() {
  * @returns {Object} 格式化后的节点对象
  */
 function formatSenseJson(node) {
+  /**
+   * 统计 sense 节点数量
+   * @param {Object} node - JSON 节点对象
+   * @returns {number} sense 节点的数量
+   */
   /**
    * 统计 sense 节点数量
    * @param {Object} node - JSON 节点对象
@@ -464,6 +475,10 @@ function formatSenseJson(node) {
   });
 
   // 递归处理
+  /**
+   * 递归遍历节点并处理 sensenum 和 sense 标签
+   * @param {Object} node - JSON 节点对象
+   */
   function traverse(node) {
     if (node.type === "element") {
       // 处理 sensenum
@@ -1132,6 +1147,111 @@ export function execPyArrFromXml(xml) {
   return pyArr;
 }
 
+/**
+ * 聚典古诗文 XML 格式化为 HTML
+ * @param {string} xml - XML 字符串
+ * @param {string} [delTag=''] - 删除标签选项，传入 'del5' 将删除 type=5 的 extracontent 节点
+ * @returns {string} 格式化后的 HTML 字符串
+ */
+export function jdFormatScDetailXml(xml, delTag = '') {
+  xml = xmlToHtml(`<entry class="entry">${xml}</entry>`)
+  // 将xml-name="u"标签改为u标签
+  let xmlJson = parse(xml);
+  xmlJson = transTagToTag(xmlJson, 'annotation', 'span');
+  xmlJson = transTagToTag(xmlJson, 'extracontent', 'div');
+  if (delTag === 'del5') {
+    // 删除xml-name="extracontent"里不type=5的数据
+    xmlJson = removeExtracontentWithoutSup(xmlJson);
+  }
+  // 将xml为annotation的里边的文本全部替换为”注“字
+  xmlJson = replaceAnnotationText(xmlJson);
+  // 处理古诗文有图片的情况 诗文“id67107b6a30abb35fa55ea72d”
+  xmlJson = handleImageInScDetail(xmlJson);
+  // 将xmlJson转换成xml
+  let formattedXml = format(xmlJson);
+  formattedXml = formattedXml.replaceAll('\n', '<br>');
+  // 直接返回格式化后的xml
+  return chFormatXmlHtml(formattedXml);
+}
+
+/**
+ * 处理古诗文中的图片节点，scale>1 的图片添加 gswImage 标记
+ * @param {Object} xmlJson - JSON 节点对象
+ * @returns {Object} 处理后的节点对象
+ */
+function handleImageInScDetail(xmlJson) {
+  /**
+   * 递归处理节点，识别并标记图片
+   * @param {Object} node - JSON 节点对象
+   * @returns {Object} 处理后的节点对象
+   */
+  function processNode(node) {
+    if (!node) return node;
+    if (node.type === "element") {
+      // 如果是extracontent节点，检查是否包含图片
+      if (node.attributes?.["xml-name"] === "image" && node.attributes?.scale && (+node.attributes?.scale > 1)) {
+        node.attributes.gswImage = "1";
+      }
+      if (node.children && node.children.length > 0) {
+        node.children = node.children.map(processNode);
+      }
+    }
+    return node;
+  }
+  return processNode(xmlJson);
+}
+
+/**
+ * 删除 type 不为 5 的 extracontent 节点
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 处理后的节点对象
+ */
+function removeExtracontentWithoutSup(node) {
+  if (!node) return null;
+  // 文本节点直接返回
+  if (node.type === "text") return node;
+  // 元素节点
+  if (node.type === "element") {
+    // 先递归处理子节点
+    if (node.children && node.children.length > 0) {
+      node.children = node.children.map(child => removeExtracontentWithoutSup(child)).filter(Boolean);
+    }
+    // 只处理 extracontent
+    const tag = node.attributes?.["xml-name"]?.toLowerCase() || "";
+    if (tag === 'extracontent') {
+      if (node.attributes && node.attributes["type"] === "5") {
+        return null; // 如果有type为5的节点，则删除整个extracontent节点
+      }
+    }
+    return node;
+  }
+  return null;
+}
+
+/**
+ * 替换 annotation 标签内的文本为空字符串
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 处理后的节点对象
+ */
+function replaceAnnotationText(node) {
+  if (!node) return null;
+  if (node.type === "text") return node;
+  if (node.type === "element") {
+    const tag = node.attributes?.["xml-name"]?.toLowerCase() || "";
+    if (tag === 'annotation' && node.children && node.children.length > 0) {
+      node.children = [{ type: "text", text: "" }];
+      // 后续解开下边两行注释删掉上边的一行即可
+      // node.children = [{ type: "text", text: "注" }];
+      // node.attributes.style = `border: 1px solid #2066db;border-radius: 1.5em;color: #2066db;font-size: .9em;text-align: center;display: inline-block;margin: 0 2px;vertical-align: middle;box-sizing: border-box;padding: 0 2px;`;
+      }
+    if (node.children && node.children.length > 0) {
+      node.children = node.children.map(child => replaceAnnotationText(child));
+    }
+    return node;
+  }
+  return null;
+}
+
 export class XmlProcessor {
   /**
    * 将 XML 字符串转换为 JSON 对象结构
@@ -1208,6 +1328,16 @@ export class XmlProcessor {
   jdFormatXmlHtml(xml) {
     return jdFormatXmlHtml(xml);
   }
+
+  /**
+   * 聚典古诗文 XML 格式化为 HTML
+   * @param {string} xml - XML 字符串
+   * @param {string} [delTag=''] - 删除标签选项，传入 'del5' 将删除 type=5 的 extracontent 节点
+   * @returns {string} 格式化后的 HTML 字符串
+   */
+  jdFormatScDetailXml(xml, delTag = '') {
+    return jdFormatScDetailXml(xml, delTag);
+  }
 }
 
 // 创建默认共享实例，用于静态方法调用
@@ -1222,5 +1352,6 @@ XmlProcessor.injectBase64Font = (fontData, fontFamily) => injectBase64Font(fontD
 XmlProcessor.execPyArrFromXml = (xml) => execPyArrFromXml(xml);
 XmlProcessor.chFormatXmlPreview = (xml) => chFormatXmlPreview(xml);
 XmlProcessor.jdFormatXmlHtml = (xml) => jdFormatXmlHtml(xml);
+XmlProcessor.jdFormatScDetailXml = (xml, delTag) => jdFormatScDetailXml(xml, delTag);
 
 export default XmlProcessor;
