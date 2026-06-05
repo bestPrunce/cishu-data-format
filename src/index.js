@@ -1,6 +1,6 @@
 /**
  * @author Ginga
- * @updated 2026-06-05 09:57:56
+ * @updated 2026-06-05 10:15:50
  * @version 1.0.3
  */
 
@@ -894,6 +894,104 @@ export function chFormatXmlHtml(xml) {
 }
 
 
+// 聚典数据format
+export function jdFormatXmlHtml(xml) {
+  // 将xml-name="u"标签改为u标签
+  let xmlJson = parse(xml);
+  xmlJson = transTagToTag(xmlJson, 'u', 'u');
+  // 将xml-name="citation"标签改为div标签
+  xmlJson = transTagToTag(xmlJson, 'citation', 'div');
+  // 给xml-name为“citation”的标签添加字体样式
+  xmlJson = addStyleToTag(xmlJson, 'citation', 'color: gray');
+  // 给xml-name为"word"的标签添加margin样式
+  xmlJson = addStyleToTag(xmlJson, 'word', 'margin-right: 10px');
+  // 删除xml-name为"seealso"的标签及其内容
+  xmlJson = removeTagByName(xmlJson, 'seealso');
+  // 给xml-name为"example"的标签添加color: gray样式
+  xmlJson = addStyleToTag(xmlJson, 'example', 'color: gray;');
+  // 给xml-name为"extracontent"的标签添加color: gray样式
+  xmlJson = addStyleToTag(xmlJson, 'extracontent', 'color: gray;');
+  // 给xml-name为"example"且name属性为"⊙"的标签添加上方分割线样式
+  xmlJson = addStyleToTagWithAttr(xmlJson, 'example', 'name', '⊙', 'border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 8px;display: block;');
+  // 给xml-name为"example"且name属性不为"◇"、"▷"、"⊙"的标签设置为block
+  xmlJson = addStyleToExampleExcept(xmlJson, ['◇', '▷', '⊙'], 'display: block;');
+  // 将xmlJson转换成xml
+  xml = format(xmlJson);
+  return xml;
+}
+
+
+function addStyleToTagWithAttr(node, tagName, attrKey, attrValue, style) {
+  if (!node) return null;
+  if (node.type === "text") return node;
+  if (node.type === "element") {
+    if (
+      node.attributes?.["xml-name"]?.toLowerCase() === tagName &&
+      node.attributes?.[attrKey] === attrValue
+    ) {
+      node.attributes.style = (node.attributes.style || '') + style;
+    }
+    if (node.children && node.children.length > 0) {
+      node.children = node.children.map(child => addStyleToTagWithAttr(child, tagName, attrKey, attrValue, style)).filter(Boolean);
+    }
+    return node;
+  }
+  return null;
+}
+
+
+function addStyleToExampleExcept(node, excludeValues, style) {
+  if (!node) return null;
+  if (node.type === "text") return node;
+  if (node.type === "element") {
+    if (
+      node.attributes?.["xml-name"]?.toLowerCase() === "example" &&
+      node.attributes?.name &&
+      !excludeValues.includes(node.attributes.name)
+    ) {
+      node.attributes.style = (node.attributes.style || '') + style;
+    }
+    if (node.children && node.children.length > 0) {
+      node.children = node.children.map(child => addStyleToExampleExcept(child, excludeValues, style)).filter(Boolean);
+    }
+    return node;
+  }
+  return null;
+}
+
+function removeTagByName(node, tagName) {
+  if (!node) return null;
+  if (node.type === "text") return node;
+  if (node.type === "element") {
+    const tag = node.attributes?.["xml-name"]?.toLowerCase() || "";
+    if (tag === tagName.toLowerCase()) {
+      return null;
+    }
+    if (node.children && node.children.length > 0) {
+      node.children = node.children
+        .map(child => removeTagByName(child, tagName))
+        .filter(Boolean);
+    }
+    return node;
+  }
+  return null;
+}
+
+function addStyleToTag(node, tagName, style) {
+  if (!node) return null;
+  if (node.type === "text") return node;
+  if (node.type === "element") {
+    if (node.attributes?.["xml-name"]?.toLowerCase() === tagName) {
+      node.attributes.style = (node.attributes.style || '') + style;
+    }
+    if (node.children && node.children.length > 0) {
+      node.children = node.children.map(child => addStyleToTag(child, tagName, style)).filter(Boolean);
+    }
+    return node;
+  }
+  return null;
+}
+
 
 /**
  * 从 XML 中提取拼音数组
@@ -974,6 +1072,15 @@ export class XmlProcessor {
   execPyArrFromXml(xml) {
     return execPyArrFromXml(xml);
   }
+
+  /**
+   * 聚典数据格式化为 HTML
+   * @param {string} xml - XML 字符串
+   * @returns {string} 格式化后的 XML/HTML 字符串
+   */
+  jdFormatXmlHtml(xml) {
+    return jdFormatXmlHtml(xml);
+  }
 }
 
 // 创建默认共享实例，用于静态方法调用
@@ -987,5 +1094,6 @@ XmlProcessor.xmlToHtml = (xmlString, targetTag) => xmlToHtml(xmlString, targetTa
 XmlProcessor.injectBase64Font = (fontData, fontFamily) => injectBase64Font(fontData, fontFamily);
 XmlProcessor.execPyArrFromXml = (xml) => execPyArrFromXml(xml);
 XmlProcessor.chFormatXmlPreview = (xml) => chFormatXmlPreview(xml);
+XmlProcessor.jdFormatXmlHtml = (xml) => jdFormatXmlHtml(xml);
 
 export default XmlProcessor;

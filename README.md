@@ -208,6 +208,43 @@ console.log(pyList);
 */
 ```
 
+### 8. 聚典数据格式化为 HTML (`jdFormatXmlHtml`)
+
+对通过 `xmlToHtml` 转换后的 HTML/XML 字符串进行聚典特定的排版格式化，包含特定的标签映射、样式修饰和元素剔除。
+
+- **`XmlProcessor.jdFormatXmlHtml(htmlString)`** 或 `new XmlProcessor().jdFormatXmlHtml(htmlString)`
+
+#### 转换逻辑说明
+1. **标签转换与映射**：将 `xml-name="u"` 的标签转为 `<u>`，`xml-name="citation"` 的标签转为 `<div>`。
+2. **样式修饰**：
+   - 给 `xml-name="citation"` 标签添加 `color: gray` 样式。
+   - 给 `xml-name="word"` 标签添加 `margin-right: 10px` 样式。
+   - 给 `xml-name="example"` 标签添加 `color: gray;` 样式。
+   - 给 `xml-name="extracontent"` 标签添加 `color: gray;` 样式。
+   - 给 `xml-name="example"` 且 `name` 属性为 `"⊙"` 的标签添加上方分割线样式 `border-top: 1px solid #e0e0e0; margin-top: 8px; padding-top: 8px;display: block;`。
+   - 给 `xml-name="example"` 且 `name` 属性不为 `"◇"`, `"▷"`, `"⊙"` 的标签设置为 `display: block;`。
+3. **元素剔除**：自动删除 `xml-name="seealso"` 的标签及其所有内容。
+
+```javascript
+import XmlProcessor from 'cishu-data-format';
+
+const xml = `
+<entry>
+  <u>underlined text</u>
+  <citation>citation content</citation>
+  <seealso>see also content</seealso>
+</entry>
+`.trim();
+
+// 1. 先转为 HTML 字符串
+const html = XmlProcessor.xmlToHtml(xml);
+
+// 2. 格式化聚典数据
+const result = XmlProcessor.jdFormatXmlHtml(html);
+console.log(result);
+// 输出：<span xml-name="entry"><u xml-name="u">underlined text</u><div xml-name="citation" style="color: gray">citation content</div></span>
+```
+
 ---
 
 ## 许可证
