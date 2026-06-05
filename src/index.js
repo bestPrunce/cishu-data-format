@@ -1,6 +1,6 @@
 /**
  * @author Ginga
- * @updated 2026-06-05 10:15:50
+ * @updated 2026-06-05 10:19:10
  * @version 1.0.3
  */
 
@@ -174,6 +174,11 @@ function extractText(xmlStr) {
     .trim();
 }
 
+/**
+ * 格式化 XML 字符串，移除 XML 声明头
+ * @param {string} str - 待格式化的 XML 字符串
+ * @returns {string} 格式化后的 XML 字符串
+ */
 function formatXmlString(str) {
   let xmlString = str
   if (!xmlString || typeof xmlString !== 'string') {
@@ -367,11 +372,25 @@ export function injectBase64Font(fontData, fontFamily = 'ztFont') {
   });
 }
 
+/**
+ * 获取主题色
+ * @returns {string} 主题色的十六进制颜色值
+ */
 function getPrimaryColor() {
   return '#3b82f6';
 }
 
+/**
+ * 格式化义项（sense）节点，添加序号标记
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object} 格式化后的节点对象
+ */
 function formatSenseJson(node) {
+  /**
+   * 统计 sense 节点数量
+   * @param {Object} node - JSON 节点对象
+   * @returns {number} sense 节点的数量
+   */
   function countSense(node) {
     let count = 0;
 
@@ -481,6 +500,11 @@ function formatSenseJson(node) {
   return node;
 }
 
+/**
+ * 清理 JSON 节点，删除指定的标签节点
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 清理后的节点对象
+ */
 function cleanJsonNode(node) {
   if (!node) return null;
 
@@ -515,6 +539,11 @@ function cleanJsonNode(node) {
   return null;
 }
 
+/**
+ * 为繁体和异体标签添加描述文字
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 处理后的节点对象
+ */
 function addTextBefore(node) {
   if (!node) return null;
 
@@ -589,6 +618,11 @@ function addTextBefore(node) {
   return null;
 }
 
+/**
+ * 将 consultword 标签转换为链接样式
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 处理后的节点对象
+ */
 function changeLink(node) {
   if (!node) return null;
   // 文本节点直接返回
@@ -614,6 +648,11 @@ function changeLink(node) {
   return null;
 }
 
+/**
+ * 处理 sup 标签的行高样式
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 处理后的节点对象
+ */
 function changeSupLineHeight(node) {
   if (!node) return null;
   // 文本节点直接返回
@@ -643,6 +682,13 @@ function changeSupLineHeight(node) {
   return null;
 }
 
+/**
+ * 将指定标签转换为另一个标签
+ * @param {Object} node - JSON 节点对象
+ * @param {string} tag1 - 源标签名
+ * @param {string} tag2 - 目标标签名
+ * @returns {Object|null} 处理后的节点对象
+ */
 function transTagToTag(node, tag1, tag2) {
   if (!node) return null;
   // 文本节点直接返回
@@ -663,6 +709,11 @@ function transTagToTag(node, tag1, tag2) {
   return null;
 }
 
+/**
+ * 处理 supback 标签及其内部 sub 标签的样式
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 处理后的节点对象
+ */
 function handleSupBack(node) {
   return handleSupScope(node, {
     scopeName: "supback",
@@ -672,6 +723,11 @@ function handleSupBack(node) {
   });
 }
 
+/**
+ * 处理 supfront 标签及其内部 sup 标签的样式
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 处理后的节点对象
+ */
 function handleSupFront(node) {
   return handleSupScope(node, {
     scopeName: "supfront",
@@ -681,6 +737,13 @@ function handleSupFront(node) {
   });
 }
 
+/**
+ * 通用的作用域标签处理函数
+ * @param {Object} node - JSON 节点对象
+ * @param {Object} options - 处理选项配置
+ * @param {boolean} [inScope=false] - 是否在作用域内
+ * @returns {Object|null} 处理后的节点对象
+ */
 function handleSupScope(node, options, inScope = false) {
   if (!node) return null;
 
@@ -734,6 +797,11 @@ function handleSupScope(node, options, inScope = false) {
   return null;
 }
 
+/**
+ * 处理 consultword 标签，只保留文本内容
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 处理后的节点对象
+ */
 function handleConsultWord(node) {
   if (!node) return null;
   // 文本节点直接返回
@@ -754,6 +822,11 @@ function handleConsultWord(node) {
   return null;
 }
 
+/**
+ * 处理 foreign 标签，添加字体样式
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 处理后的节点对象
+ */
 function handleForeign(node) {
   if (!node) return null;
   // 文本节点直接返回
@@ -774,6 +847,11 @@ function handleForeign(node) {
   return null;
 }
 
+/**
+ * 为 b 标签添加阴影效果模拟加粗
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 处理后的节点对象
+ */
 function addShadowToTag(node) {
   if (!node) return null;
   // 文本节点直接返回
@@ -794,6 +872,11 @@ function addShadowToTag(node) {
   return null;
 }
 
+/**
+ * 处理 image 标签，转换为 img 标签并设置样式
+ * @param {Object} node - JSON 节点对象
+ * @returns {Object|null} 处理后的节点对象
+ */
 function handleImage(node) {
   if (!node) return null;
   // 文本节点直接返回
@@ -821,6 +904,12 @@ function handleImage(node) {
 
 
 
+/**
+ * 递归提取拼音标签内容
+ * @param {Object} node - JSON 节点对象
+ * @param {Array} res - 用于存储拼音结果的数组
+ * @returns {Object|null} 处理后的节点对象
+ */
 function execPY(node, res) {
   if (!node) return null;
   // 文本节点直接返回
@@ -846,6 +935,11 @@ function execPY(node, res) {
   return null;
 }
 
+/**
+ * 将 XML 字符串快速转换为预览格式的 HTML
+ * @param {string} xml - XML 字符串
+ * @returns {string} 格式化后的 HTML 字符串
+ */
 export function chFormatXmlPreview(xml) {
   return chFormatXmlHtml(xmlToHtml(xml))
 }
@@ -894,7 +988,11 @@ export function chFormatXmlHtml(xml) {
 }
 
 
-// 聚典数据format
+/**
+ * 聚典数据格式化为 HTML
+ * @param {string} xml - XML 字符串
+ * @returns {string} 格式化后的 XML/HTML 字符串
+ */
 export function jdFormatXmlHtml(xml) {
   // 将xml-name="u"标签改为u标签
   let xmlJson = parse(xml);
@@ -921,6 +1019,15 @@ export function jdFormatXmlHtml(xml) {
 }
 
 
+/**
+ * 为指定标签且具有特定属性值的节点添加样式
+ * @param {Object} node - JSON 节点对象
+ * @param {string} tagName - 标签名
+ * @param {string} attrKey - 属性键
+ * @param {string} attrValue - 属性值
+ * @param {string} style - 要添加的样式字符串
+ * @returns {Object|null} 处理后的节点对象
+ */
 function addStyleToTagWithAttr(node, tagName, attrKey, attrValue, style) {
   if (!node) return null;
   if (node.type === "text") return node;
@@ -940,6 +1047,13 @@ function addStyleToTagWithAttr(node, tagName, attrKey, attrValue, style) {
 }
 
 
+/**
+ * 为 example 标签添加样式（排除特定 name 属性值）
+ * @param {Object} node - JSON 节点对象
+ * @param {Array<string>} excludeValues - 要排除的 name 属性值数组
+ * @param {string} style - 要添加的样式字符串
+ * @returns {Object|null} 处理后的节点对象
+ */
 function addStyleToExampleExcept(node, excludeValues, style) {
   if (!node) return null;
   if (node.type === "text") return node;
@@ -959,6 +1073,12 @@ function addStyleToExampleExcept(node, excludeValues, style) {
   return null;
 }
 
+/**
+ * 删除指定标签名的节点及其内容
+ * @param {Object} node - JSON 节点对象
+ * @param {string} tagName - 要删除的标签名
+ * @returns {Object|null} 处理后的节点对象
+ */
 function removeTagByName(node, tagName) {
   if (!node) return null;
   if (node.type === "text") return node;
@@ -977,6 +1097,13 @@ function removeTagByName(node, tagName) {
   return null;
 }
 
+/**
+ * 为指定标签添加样式
+ * @param {Object} node - JSON 节点对象
+ * @param {string} tagName - 标签名
+ * @param {string} style - 要添加的样式字符串
+ * @returns {Object|null} 处理后的节点对象
+ */
 function addStyleToTag(node, tagName, style) {
   if (!node) return null;
   if (node.type === "text") return node;
