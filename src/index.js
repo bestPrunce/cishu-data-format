@@ -1,7 +1,7 @@
 /**
  * @author Ginga
- * @updated 2026-06-05 15:32:17
- * @version 1.0.4
+ * @updated 2026-06-05 15:32:35
+ * @version 1.0.5
  */
 
 /**
